@@ -1,0 +1,31 @@
+#######################################
+# Syntax Coloring Map For WS2812B_RMT
+#######################################
+
+#######################################
+# Class (KEYWORD1)
+#######################################
+
+CWs2812bRmt	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+bInit	KEYWORD2
+pu8GetBuffer	KEYWORD2
+szGetBufferSize	KEYWORD2
+vSetBrightness	KEYWORD2
+vSetPixel	KEYWORD2
+vShow	KEYWORD2
+vClear	KEYWORD2
+vGetWheelColor	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+c_u32Ws2812bT0hTicks	LITERAL1
+c_u32Ws2812bT0lTicks	LITERAL1
+c_u32Ws2812bT1hTicks	LITERAL1
+c_u32Ws2812bT1lTicks	LITERAL1
