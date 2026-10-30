@@ -16,6 +16,8 @@ bInit	KEYWORD2
 pu8GetBuffer	KEYWORD2
 szGetBufferSize	KEYWORD2
 vSetBrightness	KEYWORD2
+vSetGammaCorrection	KEYWORD2
+u8Gamma	KEYWORD2
 vSetPixel	KEYWORD2
 vShow	KEYWORD2
 vClear	KEYWORD2

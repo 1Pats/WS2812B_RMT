@@ -1,5 +1,10 @@
 # Release Notes — WS2812B_RMT
 
+## V1.1.0
+
+- Added gamma correction: `vSetGammaCorrection(bool)` applies a gamma 2.8 table in `vSetPixel()` (off by default)
+- Added static helper `u8Gamma()` for gamma-correcting values written directly to the buffer
+
 ## V1.0.0
 
 Initial release.

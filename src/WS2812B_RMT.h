@@ -17,6 +17,7 @@ private:
     size_t m_szNumLeds;                          // Total number of addressable LEDs in the strip
     size_t m_szTotalBytes;                       // Total size of the frame buffer in bytes (3 bytes per LED: G, R, B)
     uint8_t m_u8Brightness;                      // Global brightness level scaled from 0 (off) to 255 (max)
+    bool m_bGammaEnabled;                        // When true, vSetPixel() applies gamma correction after brightness scaling
 
     rmt_channel_handle_t m_hTxChan;              // Handle for the allocated ESP32 RMT TX channel
     rmt_encoder_handle_t m_hLedEncoder;          // Handle for the custom RMT bytes encoder
@@ -40,6 +41,8 @@ public:
     uint8_t* pu8GetBuffer();                     // Returns a raw pointer to the internal frame buffer
     size_t szGetBufferSize() const;              // Returns the total capacity of the frame buffer in bytes
     void vSetBrightness(uint8_t u8Brightness);   // Sets the master scaling value for pixel brightness
+    void vSetGammaCorrection(bool bEnable);      // Enables or disables gamma correction (gamma 2.8) in vSetPixel()
+    static uint8_t u8Gamma(uint8_t u8Value);     // Returns the gamma-corrected value of one color channel (for direct buffer access)
     void vSetPixel(size_t szIndex, uint8_t u8R, uint8_t u8G, uint8_t u8B); // Sets specific RGB colors for a pixel index with integrated brightness scaling
     void vShow(); // Pushes the frame buffer into the queue to trigger hardware transmission
     void vClear(); // Clears the internal frame buffer by resetting all elements to zero

@@ -1,5 +1,24 @@
 #include "WS2812B_RMT.h"
 
+static const uint8_t c_au8GammaTable[256] = {                       // Gamma 2.8 lookup table: round(pow(i / 255.0, 2.8) * 255), stored in flash
+      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
+      1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
+      2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,  5,  5,
+      5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10,
+     10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
+     17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
+     25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
+     37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
+     51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
+     69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
+     90, 92, 93, 95, 96, 98, 99,101,102,104,105,107,109,110,112,114,
+    115,117,119,120,122,124,126,127,129,131,133,135,137,138,140,142,
+    144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
+    177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
+    215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255
+};
+
 void CWs2812bRmt::LedTaskCore0(void *pParameters) {                  // Background FreeRTOS task running on Core 0 to handle asynchronous hardware transmission
     CWs2812bRmt *pInstance = static_cast<CWs2812bRmt*>(pParameters); // Cast generic parameters pointer back into the usable class instance context
     uint8_t *pu8LocalGrb = (uint8_t *)malloc(pInstance->m_szTotalBytes); // Dynamically allocate local task memory to securely duplicate incoming frame bytes
@@ -31,6 +50,7 @@ CWs2812bRmt::CWs2812bRmt(int iLedPin, size_t szNumLeds) :            // Class co
     m_szNumLeds(szNumLeds),                                          // Store total amount of LEDs in configuration
     m_szTotalBytes(szNumLeds * 3),                                   // Compute target buffer size (3 bytes per pixel)
     m_u8Brightness(255),                                             // Set initialization brightness to full (100%)
+    m_bGammaEnabled(false),                                          // Gamma correction is off by default so existing sketches look unchanged
     m_hTxChan(NULL),                                                 // Initialize peripheral channel handle as empty
     m_hLedEncoder(NULL),                                             // Initialize timing bit encoder handle as empty
     m_hLedQueue(NULL),                                               // Initialize FreeRTOS queue structure as empty
@@ -118,7 +138,15 @@ size_t CWs2812bRmt::szGetBufferSize() const {                        // Return c
 }
 
 void CWs2812bRmt::vSetBrightness(uint8_t u8Brightness) {             // Set master variable boundary used to adjust color scale outputs
-    m_u8Brightness = u8Brightness;  
+    m_u8Brightness = u8Brightness;
+}
+
+void CWs2812bRmt::vSetGammaCorrection(bool bEnable) {               // Turn gamma correction on or off for pixels set after this call
+    m_bGammaEnabled = bEnable;
+}
+
+uint8_t CWs2812bRmt::u8Gamma(uint8_t u8Value) {                      // Look up the gamma-corrected value so perceived brightness changes evenly
+    return c_au8GammaTable[u8Value];
 }
 
 void CWs2812bRmt::vSetPixel(size_t szIndex, uint8_t u8R, uint8_t u8G, uint8_t u8B) { // Maps specific pixel index array properties into the dedicated GRB protocol pattern
@@ -128,6 +156,12 @@ void CWs2812bRmt::vSetPixel(size_t szIndex, uint8_t u8R, uint8_t u8G, uint8_t u8
         u8R = (uint16_t)(u8R * m_u8Brightness) >> 8;                 // Scale red color intensity
         u8G = (uint16_t)(u8G * m_u8Brightness) >> 8;                 // Scale green color intensity
         u8B = (uint16_t)(u8B * m_u8Brightness) >> 8;                 // Scale blue color intensity
+    }
+
+    if (m_bGammaEnabled) {                                           // Apply gamma after brightness so brightness steps also look even to the eye
+        u8R = c_au8GammaTable[u8R];
+        u8G = c_au8GammaTable[u8G];
+        u8B = c_au8GammaTable[u8B];
     }
 
     m_pu8FrameBuffer[szIndex * 3 + 0] = u8G;                         // Force storage alignment matching native WS2812B hardware specifications (GRB sequence layout); assign green data value first

@@ -62,11 +62,27 @@ CWs2812bRmt strip2(19, 60);
 | `bool bInit()` | Set up RMT channel, encoder, queue and Core 0 task; returns `false` on failure |
 | `void vSetPixel(size_t szIndex, uint8_t u8R, uint8_t u8G, uint8_t u8B)` | Set one pixel (brightness is applied here) |
 | `void vSetBrightness(uint8_t u8Brightness)` | Set brightness 0–255; affects pixels set **after** the call |
+| `void vSetGammaCorrection(bool bEnable)` | Turn gamma correction (gamma 2.8) on or off, default off; affects pixels set **after** the call |
+| `static uint8_t u8Gamma(uint8_t u8Value)` | Gamma-corrected value of one color channel, for direct buffer access |
 | `void vClear()` | Set all pixels in the buffer to black |
 | `void vShow()` | Send the current frame to the strip (non-blocking) |
 | `void vGetWheelColor(uint8_t u8WheelPos, uint8_t &u8R, uint8_t &u8G, uint8_t &u8B)` | Rainbow color for a wheel position 0–255 |
 | `uint8_t* pu8GetBuffer()` | Raw frame buffer, 3 bytes per LED in **GRB** order |
 | `size_t szGetBufferSize() const` | Frame buffer size in bytes |
+
+## 🌗 Gamma Correction
+
+LEDs respond linearly to the values you send, but the eye does not: low values look much
+too bright and fades seem to jump. With gamma correction on, `vSetPixel()` passes each
+channel through a gamma 2.8 table, so fades and color mixes look smoother and more natural.
+
+```cpp
+leds.vSetGammaCorrection(true);   // call before setting pixels
+```
+
+- Off by default, so existing sketches look the same.
+- Applied after brightness scaling, so brightness steps also look even.
+- Very low values become 0: with gamma on, values below 28 turn the channel off.
 
 ## 🛠️ Direct Buffer Access
 
@@ -75,7 +91,8 @@ directly, use `pu8GetBuffer()`, which returns a pointer to the LED color data.
 
 - Bytes are stored in **GRB** order, 3 bytes per LED.
 - LED index `i` (0-based, same as `vSetPixel`) starts at byte offset `i * 3`.
-- Brightness is **not** applied to bytes written directly.
+- Brightness and gamma correction are **not** applied to bytes written directly.
+  Use `CWs2812bRmt::u8Gamma(value)` if you want gamma-corrected values.
 - Call `vShow()` afterwards to send the changes to the strip.
 
 ```cpp
